@@ -1,9 +1,12 @@
 {
-  "name": "xixi-workspace",
+  "name": "xixi",
   "version": "0.1.0",
-  "private": true,
-  "description": "xixi Company Skill CLI monorepo",
+  "private": false,
+  "description": "xixi Company Skill CLI",
   "packageManager": "pnpm@10.26.0",
+  "bin": {
+    "xixi": "packages/cli/dist/index.js"
+  },
   "scripts": {
     "build": "pnpm -r build",
     "postinstall": "pnpm build",
