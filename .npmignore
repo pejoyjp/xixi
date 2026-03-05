@@ -1,0 +1,16 @@
+node_modules
+.pnpm-store
+coverage
+*.log
+*.tgz
+.git
+.gitignore
+pnpm-lock.yaml
+pnpm-workspace.yaml
+tsconfig.base.json
+examples/
+test/
+packages/**/src/
+packages/**/tests/
+packages/**/tsconfig.json
+packages/**/tsup.config.ts
