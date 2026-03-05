@@ -1,0 +1,31 @@
+{
+  "name": "xixi",
+  "version": "0.1.0",
+  "description": "Company skill CLI",
+  "bin": {
+    "xixi": "dist/index.js"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "pnpm --filter @xixi/core build && vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@xixi/core": "workspace:*",
+    "chalk": "^5.4.1",
+    "commander": "^13.1.0",
+    "fs-extra": "^11.3.0",
+    "inquirer": "^12.4.2",
+    "js-yaml": "^4.1.0",
+    "simple-git": "^3.27.0"
+  },
+  "devDependencies": {
+    "execa": "^9.5.2",
+    "tsup": "^8.4.0"
+  }
+}

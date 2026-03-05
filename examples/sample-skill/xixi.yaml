@@ -1,0 +1,6 @@
+schema_version: 1
+name: pr-description
+dept: engineering
+description: Generate PR description from diff
+entry: prompt.md
+
