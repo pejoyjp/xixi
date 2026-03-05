@@ -1,5 +1,7 @@
 node_modules
 dist
+!dist/
+!dist/**
 !packages/cli/dist/
 !packages/cli/dist/**
 !packages/core/dist/
@@ -7,3 +9,4 @@ dist
 .pnpm-store
 coverage
 *.log
+*.tgz
