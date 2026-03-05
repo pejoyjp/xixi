@@ -6,6 +6,7 @@
   "packageManager": "pnpm@10.26.0",
   "scripts": {
     "build": "pnpm -r build",
+    "postinstall": "pnpm build",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck"
   },
