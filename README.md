@@ -112,12 +112,12 @@ Behavior:
 ```bash
 xixi upgrade-cli
 xixi self-upgrade
-xixi upgrade-cli --source git+https://github.com/pejoyjp/xixi.git
+xixi upgrade-cli --source https://codeload.github.com/pejoyjp/xixi/tar.gz/refs/heads/main
 ```
 
 Behavior:
 - upgrades xixi CLI itself via npm global install
-- default source is `git+https://github.com/pejoyjp/xixi.git`
+- default source is `https://codeload.github.com/pejoyjp/xixi/tar.gz/refs/heads/main`
 
 ### Remote
 

@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process";
 import { XixiError } from "@xixi/core";
 import { printInfo, printSuccess } from "../ui/printer";
 
-const DEFAULT_SOURCE = "git+https://github.com/pejoyjp/xixi.git";
+const DEFAULT_SOURCE = "https://codeload.github.com/pejoyjp/xixi/tar.gz/refs/heads/main";
 
 export type UpgradeCliOptions = {
   source?: string;

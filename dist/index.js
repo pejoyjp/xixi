@@ -44931,7 +44931,7 @@ async function runUpgrade(context, skillName, options) {
 // src/commands/upgrade-cli.ts
 var import_node_child_process = require("child_process");
 var import_core24 = __toESM(require_dist());
-var DEFAULT_SOURCE = "git+https://github.com/pejoyjp/xixi.git";
+var DEFAULT_SOURCE = "https://codeload.github.com/pejoyjp/xixi/tar.gz/refs/heads/main";
 var defaultRunner = (command, args) => (0, import_node_child_process.spawnSync)(command, args, {
   stdio: "inherit",
   shell: false

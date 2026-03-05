@@ -13,7 +13,7 @@ describe("upgrade-cli command", () => {
 
     expect(runner).toHaveBeenCalledWith(
       "npm",
-      ["install", "-g", "git+https://github.com/pejoyjp/xixi.git"]
+      ["install", "-g", "https://codeload.github.com/pejoyjp/xixi/tar.gz/refs/heads/main"]
     );
   });
 
