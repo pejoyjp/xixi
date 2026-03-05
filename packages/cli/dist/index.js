@@ -25,7 +25,7 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 
 // src/index.ts
 var import_commander = require("commander");
-var import_core10 = require("@xixi/core");
+var import_core11 = require("@xixi/core");
 
 // src/commands/init.ts
 var import_node_path = __toESM(require("path"));
@@ -525,10 +525,40 @@ async function runUpgrade(context, skillName, options) {
   }
 }
 
-// src/commands/view.ts
+// src/commands/upgrade-cli.ts
+var import_node_child_process = require("child_process");
 var import_core8 = require("@xixi/core");
+var DEFAULT_SOURCE = "git+https://github.com/pejoyjp/xixi.git";
+var defaultRunner = (command, args) => (0, import_node_child_process.spawnSync)(command, args, {
+  stdio: "inherit",
+  shell: false
+});
+async function runUpgradeCli(options, deps) {
+  const runner = deps?.runner ?? defaultRunner;
+  const source = options.source?.trim() || DEFAULT_SOURCE;
+  printInfo(`Upgrading xixi CLI from ${source}`);
+  const result = runner("npm", ["install", "-g", source]);
+  if (result.error) {
+    throw new import_core8.XixiError(
+      "CLI_UPGRADE_FAILED",
+      `Failed to run npm install: ${result.error.message}`,
+      "Ensure npm is installed and retry."
+    );
+  }
+  if (typeof result.status === "number" && result.status !== 0) {
+    throw new import_core8.XixiError(
+      "CLI_UPGRADE_FAILED",
+      `Upgrade command exited with status ${result.status}`,
+      "If permission is denied, rerun with sudo or fix npm global permissions."
+    );
+  }
+  printSuccess("xixi CLI upgraded successfully.");
+}
+
+// src/commands/view.ts
+var import_core9 = require("@xixi/core");
 async function runView(options) {
-  const index = await (0, import_core8.readIndex)();
+  const index = await (0, import_core9.readIndex)();
   const filteredEntries = Object.entries(index).filter(([key, value]) => {
     if (options.name && !key.includes(options.name) && !value.name.includes(options.name)) {
       return false;
@@ -562,9 +592,9 @@ async function runRemote(context, options) {
 }
 
 // src/utils/runtime.ts
-var import_core9 = require("@xixi/core");
+var import_core10 = require("@xixi/core");
 async function buildRuntime(verbose) {
-  const loaded = await (0, import_core9.loadOrCreateConfig)();
+  const loaded = await (0, import_core10.loadOrCreateConfig)();
   if (loaded.created) {
     printInfo(`Created default config at ${loaded.path}`);
   }
@@ -579,7 +609,7 @@ async function withErrorHandling(verbose, fn) {
   try {
     return await fn();
   } catch (error) {
-    printError((0, import_core10.toUserMessage)(error, verbose));
+    printError((0, import_core11.toUserMessage)(error, verbose));
     process.exitCode = 1;
   }
 }
@@ -618,6 +648,12 @@ program.command("upgrade").description("Upgrade installed skills from remote lat
   await withErrorHandling(verbose, async () => {
     const runtime = await buildRuntime(verbose);
     await runUpgrade(runtime, name, options);
+  });
+});
+program.command("upgrade-cli").alias("self-upgrade").description("Upgrade xixi CLI itself").option("--source <spec>", "Install source spec (default: git+https://github.com/pejoyjp/xixi.git)").action(async (options) => {
+  const verbose = Boolean(program.opts().verbose);
+  await withErrorHandling(verbose, async () => {
+    await runUpgradeCli(options);
   });
 });
 program.command("view").description("View installed skills").option("--name <substring>", "Filter by name substring").option("--json", "Output JSON").action(async (options) => {

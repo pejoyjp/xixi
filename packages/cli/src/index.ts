@@ -5,6 +5,7 @@ import { runPublish } from "./commands/publish";
 import { runInstall } from "./commands/install";
 import { runUninstall } from "./commands/uninstall";
 import { runUpgrade } from "./commands/upgrade";
+import { runUpgradeCli } from "./commands/upgrade-cli";
 import { runView } from "./commands/view";
 import { runRemote } from "./commands/remote";
 import { buildRuntime } from "./utils/runtime";
@@ -90,6 +91,18 @@ program
     await withErrorHandling(verbose, async () => {
       const runtime = await buildRuntime(verbose);
       await runUpgrade(runtime, name, options);
+    });
+  });
+
+program
+  .command("upgrade-cli")
+  .alias("self-upgrade")
+  .description("Upgrade xixi CLI itself")
+  .option("--source <spec>", "Install source spec (default: git+https://github.com/pejoyjp/xixi.git)")
+  .action(async (options: { source?: string }) => {
+    const verbose = Boolean(program.opts<{ verbose?: boolean }>().verbose);
+    await withErrorHandling(verbose, async () => {
+      await runUpgradeCli(options);
     });
   });
 

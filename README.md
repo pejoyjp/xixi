@@ -107,6 +107,18 @@ Behavior:
 - updates local files under `~/.codex/skills/<name>`
 - updates index source ref to the latest commit hash
 
+### Upgrade CLI
+
+```bash
+xixi upgrade-cli
+xixi self-upgrade
+xixi upgrade-cli --source git+https://github.com/pejoyjp/xixi.git
+```
+
+Behavior:
+- upgrades xixi CLI itself via npm global install
+- default source is `git+https://github.com/pejoyjp/xixi.git`
+
 ### Remote
 
 ```bash
