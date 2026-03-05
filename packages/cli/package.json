@@ -1,5 +1,5 @@
 {
-  "name": "xixi",
+  "name": "@xixi/cli",
   "version": "0.1.0",
   "description": "Company skill CLI",
   "bin": {
