@@ -49,7 +49,6 @@ Default `config.json`:
 xixi init
 ```
 
-Creates `./<name>/` with:
 Creates `./skills/<name>/` with:
 - `SKILL.md`
 - `agents/openai.yaml`
@@ -94,6 +93,19 @@ Behavior:
 - removes local installed skill from `~/.codex/skills/<name>`
 - removes index record from `~/.xixi/index.json`
 - asks for confirmation unless `--force`
+
+### Upgrade
+
+```bash
+xixi upgrade
+xixi upgrade pr-description
+xixi upgrade --all --force
+```
+
+Behavior:
+- upgrades installed skills from remote latest (default branch head)
+- updates local files under `~/.codex/skills/<name>`
+- updates index source ref to the latest commit hash
 
 ### Remote
 

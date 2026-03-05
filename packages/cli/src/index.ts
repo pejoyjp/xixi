@@ -4,6 +4,7 @@ import { runInit } from "./commands/init";
 import { runPublish } from "./commands/publish";
 import { runInstall } from "./commands/install";
 import { runUninstall } from "./commands/uninstall";
+import { runUpgrade } from "./commands/upgrade";
 import { runView } from "./commands/view";
 import { runRemote } from "./commands/remote";
 import { buildRuntime } from "./utils/runtime";
@@ -74,6 +75,21 @@ program
     await withErrorHandling(verbose, async () => {
       const runtime = await buildRuntime(verbose);
       await runUninstall(runtime, name, options);
+    });
+  });
+
+program
+  .command("upgrade")
+  .description("Upgrade installed skills from remote latest")
+  .argument("[name]", "Skill name")
+  .option("--all", "Upgrade all installed skills")
+  .option("--ref <gitRef>", "Git ref to upgrade from")
+  .option("--force", "Upgrade without confirmation")
+  .action(async (name: string | undefined, options: { all?: boolean; ref?: string; force?: boolean }) => {
+    const verbose = Boolean(program.opts<{ verbose?: boolean }>().verbose);
+    await withErrorHandling(verbose, async () => {
+      const runtime = await buildRuntime(verbose);
+      await runUpgrade(runtime, name, options);
     });
   });
 

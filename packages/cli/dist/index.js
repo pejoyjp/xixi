@@ -25,7 +25,7 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 
 // src/index.ts
 var import_commander = require("commander");
-var import_core9 = require("@xixi/core");
+var import_core10 = require("@xixi/core");
 
 // src/commands/init.ts
 var import_node_path = __toESM(require("path"));
@@ -41,6 +41,9 @@ function printInfo(message) {
 }
 function printSuccess(message) {
   console.log(import_chalk.default.green(message));
+}
+function printWarn(message) {
+  console.warn(import_chalk.default.yellow(message));
 }
 function printError(message) {
   console.error(import_chalk.default.red(message));
@@ -439,10 +442,93 @@ async function runUninstall(context, skillName, options) {
   printInfo(`Removed path: ${installedPath}`);
 }
 
-// src/commands/view.ts
+// src/commands/upgrade.ts
+var import_fs_extra8 = __toESM(require("fs-extra"));
 var import_core7 = require("@xixi/core");
-async function runView(options) {
+async function upgradeOne(context, name, ref) {
+  const installedPath = getInstalledSkillPath(context.config, name);
+  if (!await import_fs_extra8.default.pathExists(installedPath)) {
+    throw new import_core7.XixiError("SKILL_NOT_FOUND", `Installed skill not found: ${installedPath}`);
+  }
+  const staged = await installFromRepo({
+    config: context.config,
+    name,
+    ref
+  });
+  try {
+    const manifest = await (0, import_core7.loadAndValidateManifest)(staged.stagedSkillPath);
+    await import_fs_extra8.default.remove(installedPath);
+    await import_fs_extra8.default.ensureDir(installedPath);
+    await copyDir(staged.stagedSkillPath, installedPath);
+    await (0, import_core7.upsertIndexRecord)(name, {
+      name,
+      description: manifest.description,
+      installedPath,
+      source: {
+        repo: staged.repoUrl,
+        ref: staged.commitHash
+      }
+    });
+    printSuccess(`Upgraded ${name} -> ${staged.commitHash}`);
+  } finally {
+    await staged.cleanup();
+  }
+}
+async function runUpgrade(context, skillName, options) {
+  if (skillName && options.all) {
+    throw new import_core7.XixiError("MANIFEST_INVALID", "Use either <name> or --all, not both.");
+  }
   const index = await (0, import_core7.readIndex)();
+  const installedNames = Object.keys(index).sort();
+  if (installedNames.length === 0) {
+    printInfo("No installed skills to upgrade.");
+    return;
+  }
+  let targets;
+  if (skillName) {
+    if (skillName.includes("/")) {
+      throw new import_core7.XixiError("MANIFEST_INVALID", "Upgrade target must be <name>.");
+    }
+    targets = [skillName];
+  } else {
+    targets = installedNames;
+  }
+  if (!options.force) {
+    if (!process.stdin.isTTY) {
+      throw new import_core7.XixiError(
+        "NON_TTY_CONFIRM_REQUIRED",
+        `Ready to upgrade ${targets.length} skill(s).`,
+        "Run in interactive terminal to confirm, or pass --force."
+      );
+    }
+    const shouldUpgrade = await confirm(
+      `Upgrade ${targets.length} skill(s) from remote latest${options.ref ? ` at ref ${options.ref}` : ""}?`,
+      true
+    );
+    if (!shouldUpgrade) {
+      printInfo("Upgrade cancelled.");
+      return;
+    }
+  }
+  let failures = 0;
+  for (const name of targets) {
+    try {
+      await upgradeOne(context, name, options.ref);
+    } catch (error) {
+      failures += 1;
+      const message = error instanceof Error ? error.message : String(error);
+      printWarn(`Failed to upgrade ${name}: ${message}`);
+    }
+  }
+  if (failures > 0) {
+    throw new import_core7.XixiError("SKILL_NOT_FOUND", `Upgrade completed with ${failures} failure(s).`);
+  }
+}
+
+// src/commands/view.ts
+var import_core8 = require("@xixi/core");
+async function runView(options) {
+  const index = await (0, import_core8.readIndex)();
   const filteredEntries = Object.entries(index).filter(([key, value]) => {
     if (options.name && !key.includes(options.name) && !value.name.includes(options.name)) {
       return false;
@@ -476,9 +562,9 @@ async function runRemote(context, options) {
 }
 
 // src/utils/runtime.ts
-var import_core8 = require("@xixi/core");
+var import_core9 = require("@xixi/core");
 async function buildRuntime(verbose) {
-  const loaded = await (0, import_core8.loadOrCreateConfig)();
+  const loaded = await (0, import_core9.loadOrCreateConfig)();
   if (loaded.created) {
     printInfo(`Created default config at ${loaded.path}`);
   }
@@ -493,7 +579,7 @@ async function withErrorHandling(verbose, fn) {
   try {
     return await fn();
   } catch (error) {
-    printError((0, import_core9.toUserMessage)(error, verbose));
+    printError((0, import_core10.toUserMessage)(error, verbose));
     process.exitCode = 1;
   }
 }
@@ -525,6 +611,13 @@ program.command("uninstall").description("Uninstall a skill from local ~/.codex/
   await withErrorHandling(verbose, async () => {
     const runtime = await buildRuntime(verbose);
     await runUninstall(runtime, name, options);
+  });
+});
+program.command("upgrade").description("Upgrade installed skills from remote latest").argument("[name]", "Skill name").option("--all", "Upgrade all installed skills").option("--ref <gitRef>", "Git ref to upgrade from").option("--force", "Upgrade without confirmation").action(async (name, options) => {
+  const verbose = Boolean(program.opts().verbose);
+  await withErrorHandling(verbose, async () => {
+    const runtime = await buildRuntime(verbose);
+    await runUpgrade(runtime, name, options);
   });
 });
 program.command("view").description("View installed skills").option("--name <substring>", "Filter by name substring").option("--json", "Output JSON").action(async (options) => {
