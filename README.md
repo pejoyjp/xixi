@@ -1,14 +1,26 @@
-# xixi (Company Skill CLI)
+# xixi（企业技能 CLI）
 
-`xixi` is a Node.js CLI for creating, publishing, installing, and viewing internal skills.
+`xixi` 是一个用于配合 Codex 管理内部 Skill 的命令行工具，支持创建、发布、安装、升级、查看与卸载。
 
-## Requirements
+## 环境要求
 
 - Node.js >= 18
-- pnpm >= 10
-- git configured with credentials (SSH key or `gh auth`)
+- pnpm >= 10（用于本仓库开发）
+- git（用于 publish/install/remote 等远程仓库操作）
 
-## Workspace
+## 安装（推荐）
+
+```bash
+npm install -g https://codeload.github.com/pejoyjp/xixi/tar.gz/refs/heads/main
+```
+
+安装完成后可验证：
+
+```bash
+xixi --help
+```
+
+## 本地开发
 
 ```bash
 pnpm install
@@ -16,20 +28,15 @@ pnpm build
 pnpm test
 ```
 
-## Packages
+## 配置说明
 
-- `packages/core`: schemas, config, skill manifest validation, index store
-- `packages/cli`: command parsing, prompts, git/repo/file services
+首次运行会自动创建：
 
-## Config
+- 配置文件：`~/.xixi/config.json`
+- 索引文件：`~/.xixi/index.json`
+- 默认安装目录：`~/.codex/skills`
 
-On first run, `xixi` auto-creates:
-
-- config: `~/.xixi/config.json`
-- index: `~/.xixi/index.json`
-- install root: `~/.codex/skills`
-
-Default `config.json`:
+默认 `config.json` 示例：
 
 ```json
 {
@@ -41,19 +48,54 @@ Default `config.json`:
 }
 ```
 
-## Commands
+## Skill 目录结构规范
 
-### Init
+每个 skill 必须包含：
+
+- `SKILL.md`
+- `agents/openai.yaml`
+
+推荐结构：
+
+```text
+skills/
+  <skill-name>/
+    SKILL.md
+    agents/
+      openai.yaml
+```
+
+`SKILL.md` 需包含 YAML frontmatter（至少 `name`、`description`），示例：
+
+```md
+---
+name: pdf-processing
+description: Extract text and tables from PDF files, fill forms, merge documents.
+---
+
+# PDF Processing
+```
+
+`agents/openai.yaml` 需包含：
+
+```yaml
+interface:
+  display_name: "Code Review & Create PR"
+  short_description: "Compare with dev, generate Chinese PR content, run review, and create PR via gh."
+  default_prompt: "Compare the current branch with the latest dev branch, analyze the diff, generate a standardized Chinese PR title and description with code review findings, then push the branch and create a PR using gh if one does not already exist."
+```
+
+## 命令说明
+
+### 1) 初始化 skill
 
 ```bash
 xixi init
 ```
 
-Creates `./skills/<name>/` with:
-- `SKILL.md`
-- `agents/openai.yaml`
+生成目录：`./skills/<name>/`
 
-### Publish
+### 2) 发布 skill 到远程仓库
 
 ```bash
 xixi publish --path ./skills/pr-description
@@ -61,53 +103,38 @@ xixi publish pr-description
 xixi publish --force
 ```
 
-Behavior:
-- validates `SKILL.md` frontmatter and `agents/openai.yaml`
-- supports publishing installed skill by name from `~/.codex/skills/<name>`
-- clones remote skills repo
-- writes to `skills/<name>/`
-- commits and pushes
+说明：
+- 自动校验 `SKILL.md` 与 `agents/openai.yaml`
+- 远程路径写入 `skills/<name>/`
 
-### Install
+### 3) 安装 skill
 
 ```bash
 xixi install pr-description
 xixi install pr-description --ref main
 ```
 
-Behavior:
-- clones remote repo
-- checks target skill exists
-- copies into `~/.codex/skills/<name>` (default)
-- updates `~/.xixi/index.json`
-- prompts before overwrite if already installed
+说明：
+- 默认安装到 `~/.codex/skills/<name>`
+- 自动更新 `~/.xixi/index.json`
 
-### Uninstall
+### 4) 卸载 skill
 
 ```bash
 xixi uninstall pr-description
 xixi uninstall pr-description --force
 ```
 
-Behavior:
-- removes local installed skill from `~/.codex/skills/<name>`
-- removes index record from `~/.xixi/index.json`
-- asks for confirmation unless `--force`
-
-### Upgrade
+### 5) 升级 skill（从远程最新）
 
 ```bash
 xixi upgrade
 xixi upgrade pr-description
 xixi upgrade --all --force
+xixi upgrade --ref main
 ```
 
-Behavior:
-- upgrades installed skills from remote latest (default branch head)
-- updates local files under `~/.codex/skills/<name>`
-- updates index source ref to the latest commit hash
-
-### Upgrade CLI
+### 6) 升级 CLI 自身
 
 ```bash
 xixi upgrade-cli
@@ -115,11 +142,7 @@ xixi self-upgrade
 xixi upgrade-cli --source https://codeload.github.com/pejoyjp/xixi/tar.gz/refs/heads/main
 ```
 
-Behavior:
-- upgrades xixi CLI itself via npm global install
-- default source is `https://codeload.github.com/pejoyjp/xixi/tar.gz/refs/heads/main`
-
-### Remote
+### 7) 查看远程可用 skills
 
 ```bash
 xixi remote
@@ -127,12 +150,7 @@ xixi remote --name pr
 xixi remote --json
 ```
 
-Behavior:
-- clones remote repo
-- scans `skills/` and lists available skill names
-- supports optional name filter and JSON output
-
-### View
+### 8) 查看本地已安装 skills
 
 ```bash
 xixi view
@@ -140,27 +158,3 @@ xixi view --name pr
 xixi view --json
 ```
 
-Default output is a flat skill list.
-
-## Error Handling
-
-CLI uses `XixiError(code, message, hint)` and supports:
-
-```bash
-xixi --verbose <command>
-```
-
-Verbose mode prints stack details and underlying failure context.
-
-## Troubleshooting
-
-- Push failed:
-  - ensure you have write permission to the skills repo
-  - or fork and push to your fork (PR mode is planned in future versions)
-- Clone/auth failed:
-  - run `ssh -T git@github.com`
-  - verify your git credential helper or SSH key setup
-
-## Example Skill
-
-See `examples/sample-skill` for a minimal skill structure.
