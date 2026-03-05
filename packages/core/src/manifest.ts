@@ -7,16 +7,33 @@ import { XixiSkillManifestV1 } from "./types";
 
 const kebabCaseRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
-const manifestSchema = z.object({
-  schema_version: z.literal(1),
+const skillFrontmatterSchema = z.object({
   name: z.string().regex(kebabCaseRegex, "name must be kebab-case"),
-  dept: z.string().min(1),
-  description: z.string().min(1),
-  entry: z.string().min(1),
-  version: z.string().min(1).optional()
+  description: z.string().min(1)
 });
 
-export const manifestFilename = "xixi.yaml";
+const openaiYamlSchema = z.object({
+  interface: z.object({
+    display_name: z.string().min(1),
+    short_description: z.string().min(1),
+    default_prompt: z.string().min(1)
+  })
+});
+
+export const manifestFilename = "SKILL.md";
+export const openaiYamlFilename = path.join("agents", "openai.yaml");
+
+function extractFrontmatter(markdown: string): string {
+  const match = markdown.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
+  if (!match?.[1]) {
+    throw new XixiError(
+      "MANIFEST_INVALID",
+      `Invalid ${manifestFilename}: missing YAML frontmatter.`,
+      `Ensure ${manifestFilename} starts with --- and includes name/description.`
+    );
+  }
+  return match[1];
+}
 
 export async function loadManifest(skillRoot: string): Promise<XixiSkillManifestV1> {
   const manifestPath = path.join(skillRoot, manifestFilename);
@@ -25,26 +42,42 @@ export async function loadManifest(skillRoot: string): Promise<XixiSkillManifest
   }
 
   try {
-    const raw = await fs.readFile(manifestPath, "utf8");
-    const parsedYaml = yaml.load(raw);
-    return manifestSchema.parse(parsedYaml);
+    const markdown = await fs.readFile(manifestPath, "utf8");
+    const frontmatter = extractFrontmatter(markdown);
+    const parsedYaml = yaml.load(frontmatter);
+    return skillFrontmatterSchema.parse(parsedYaml);
   } catch (error) {
-    throw new XixiError("MANIFEST_INVALID", `Invalid manifest at ${manifestPath}`, "Check xixi.yaml schema.", error);
+    throw new XixiError(
+      "MANIFEST_INVALID",
+      `Invalid manifest at ${manifestPath}`,
+      `Check ${manifestFilename} frontmatter schema.`,
+      error
+    );
   }
 }
 
-export async function loadAndValidateManifest(skillRoot: string, deptList: string[]): Promise<XixiSkillManifestV1> {
+export async function loadAndValidateManifest(skillRoot: string): Promise<XixiSkillManifestV1> {
   const manifest = await loadManifest(skillRoot);
-  if (!deptList.includes(manifest.dept)) {
+  const openaiYamlPath = path.join(skillRoot, openaiYamlFilename);
+  if (!(await fs.pathExists(openaiYamlPath))) {
     throw new XixiError(
       "MANIFEST_INVALID",
-      `Manifest dept "${manifest.dept}" is not in allowed depts: ${deptList.join(", ")}`
+      `Missing metadata: ${openaiYamlPath}`,
+      `Create ${openaiYamlFilename} with interface fields.`
     );
   }
 
-  const entryPath = path.join(skillRoot, manifest.entry);
-  if (!(await fs.pathExists(entryPath))) {
-    throw new XixiError("MANIFEST_INVALID", `Entry file not found: ${manifest.entry}`, "Update manifest.entry or create file.");
+  try {
+    const raw = await fs.readFile(openaiYamlPath, "utf8");
+    const parsedYaml = yaml.load(raw);
+    openaiYamlSchema.parse(parsedYaml);
+  } catch (error) {
+    throw new XixiError(
+      "MANIFEST_INVALID",
+      `Invalid metadata at ${openaiYamlPath}`,
+      `Check ${openaiYamlFilename} schema.`,
+      error
+    );
   }
   return manifest;
 }
@@ -52,4 +85,3 @@ export async function loadAndValidateManifest(skillRoot: string, deptList: strin
 export function isKebabCase(value: string): boolean {
   return kebabCaseRegex.test(value);
 }
-

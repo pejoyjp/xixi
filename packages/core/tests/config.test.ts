@@ -27,6 +27,7 @@ describe("config", () => {
     const result = await loadOrCreateConfig();
     expect(result.created).toBe(true);
     expect(result.config.skillsRepo.url).toContain("xixi-skills");
+    expect(result.config.installRoot).toBe(path.join(home, ".codex", "skills"));
   });
 
   it("loads existing config", async () => {
@@ -42,6 +43,6 @@ describe("config", () => {
     const result = await loadOrCreateConfig();
     expect(result.created).toBe(false);
     expect(result.config.depts).toEqual(["engineering", "ops"]);
+    expect(result.config.installRoot).toBe(path.join(home, ".codex", "skills"));
   });
 });
-

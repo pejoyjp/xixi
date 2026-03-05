@@ -4,7 +4,6 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import inquirer from "inquirer";
 import { runInit } from "../src/commands/init";
-import * as repoService from "../src/services/repo-service";
 
 const dirs: string[] = [];
 
@@ -19,9 +18,7 @@ describe("init command", () => {
     const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "xixi-cli-init-"));
     dirs.push(cwd);
     vi.spyOn(process, "cwd").mockReturnValue(cwd);
-    vi.spyOn(repoService, "listRemoteDepts").mockResolvedValue(["engineering"]);
     vi.spyOn(inquirer, "prompt").mockResolvedValue({
-      dept: "engineering",
       name: "skill-one",
       description: "desc"
     });
@@ -32,8 +29,7 @@ describe("init command", () => {
         depts: ["engineering"]
       }
     });
-    expect(await fs.pathExists(path.join(cwd, "skill-one", "xixi.yaml"))).toBe(true);
-    expect(await fs.pathExists(path.join(cwd, "skill-one", "README.md"))).toBe(true);
-    expect(await fs.pathExists(path.join(cwd, "skill-one", "prompt.md"))).toBe(true);
+    expect(await fs.pathExists(path.join(cwd, "skills", "skill-one", "SKILL.md"))).toBe(true);
+    expect(await fs.pathExists(path.join(cwd, "skills", "skill-one", "agents", "openai.yaml"))).toBe(true);
   });
 });

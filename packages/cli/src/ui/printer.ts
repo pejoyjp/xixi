@@ -24,22 +24,9 @@ export function printInstalled(index: InstalledSkillIndex): void {
     return;
   }
 
-  const grouped = new Map<string, string[]>();
+  printInfo("Installed skills:\n");
   for (const key of keys.sort()) {
     const record = index[key];
-    if (!grouped.has(record.dept)) {
-      grouped.set(record.dept, []);
-    }
-    grouped.get(record.dept)?.push(`  - ${key}  ${record.description}`);
-  }
-
-  printInfo("Installed skills:\n");
-  for (const dept of [...grouped.keys()].sort()) {
-    printInfo(dept);
-    for (const line of grouped.get(dept) ?? []) {
-      printInfo(line);
-    }
-    printInfo("");
+    printInfo(`- ${key}  ${record.description}`);
   }
 }
-

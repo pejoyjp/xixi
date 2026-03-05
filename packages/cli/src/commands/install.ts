@@ -2,7 +2,6 @@ import fs from "fs-extra";
 import {
   XixiError,
   loadAndValidateManifest,
-  resolveDeptList,
   upsertIndexRecord
 } from "@xixi/core";
 import { copyDir } from "../services/file-service";
@@ -18,26 +17,23 @@ export type InstallOptions = {
 
 export async function runInstall(
   context: RuntimeContext,
-  deptName: string,
+  skillName: string,
   options: InstallOptions
 ): Promise<void> {
-  const chunks = deptName.split("/");
-  if (chunks.length !== 2 || !chunks[0] || !chunks[1]) {
-    throw new XixiError("MANIFEST_INVALID", "Install target must be <dept>/<name>.");
+  if (!skillName || skillName.includes("/")) {
+    throw new XixiError("MANIFEST_INVALID", "Install target must be <name>.");
   }
-  const [dept, name] = chunks;
+  const name = skillName;
 
   const staged = await installFromRepo({
     config: context.config,
-    dept,
     name,
     ref: options.ref
   });
 
   try {
-    const deptList = resolveDeptList(context.config);
-    const manifest = await loadAndValidateManifest(staged.stagedSkillPath, [...new Set([...deptList, dept])]);
-    const installedPath = getInstalledSkillPath(context.config, dept, name);
+    const manifest = await loadAndValidateManifest(staged.stagedSkillPath);
+    const installedPath = getInstalledSkillPath(context.config, name);
 
     if (await fs.pathExists(installedPath)) {
       if (!process.stdin.isTTY) {
@@ -58,9 +54,8 @@ export async function runInstall(
     await fs.ensureDir(installedPath);
     await copyDir(staged.stagedSkillPath, installedPath);
 
-    const key = `${dept}/${name}`;
+    const key = name;
     await upsertIndexRecord(key, {
-      dept,
       name,
       description: manifest.description,
       installedPath,
@@ -76,4 +71,3 @@ export async function runInstall(
     await staged.cleanup();
   }
 }
-

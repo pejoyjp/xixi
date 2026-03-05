@@ -1,6 +1,9 @@
 node_modules
 dist
+!packages/cli/dist/
+!packages/cli/dist/**
+!packages/core/dist/
+!packages/core/dist/**
 .pnpm-store
 coverage
 *.log
-

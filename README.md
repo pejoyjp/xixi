@@ -1,6 +1,6 @@
 # xixi (Company Skill CLI)
 
-`xixi` is a Node.js CLI for creating, publishing, installing, and viewing internal skills grouped by department.
+`xixi` is a Node.js CLI for creating, publishing, installing, and viewing internal skills.
 
 ## Requirements
 
@@ -18,7 +18,7 @@ pnpm test
 
 ## Packages
 
-- `packages/core`: schemas, config, manifest validation, index store
+- `packages/core`: schemas, config, skill manifest validation, index store
 - `packages/cli`: command parsing, prompts, git/repo/file services
 
 ## Config
@@ -27,7 +27,7 @@ On first run, `xixi` auto-creates:
 
 - config: `~/.xixi/config.json`
 - index: `~/.xixi/index.json`
-- install root: `~/.xixi/installed`
+- install root: `~/.codex/skills`
 
 Default `config.json`:
 
@@ -36,9 +36,8 @@ Default `config.json`:
   "skillsRepo": {
     "url": "git@github.com:<org>/xixi-skills.git"
   },
-  "installRoot": "/Users/<you>/.xixi/installed",
-  "tmpRoot": "/tmp",
-  "depts": ["engineering", "ops", "sales"]
+  "installRoot": "/Users/<you>/.codex/skills",
+  "tmpRoot": "/tmp"
 }
 ```
 
@@ -51,48 +50,73 @@ xixi init
 ```
 
 Creates `./<name>/` with:
-- `xixi.yaml`
-- `README.md`
-- `prompt.md`
+Creates `./skills/<name>/` with:
+- `SKILL.md`
+- `agents/openai.yaml`
 
 ### Publish
 
 ```bash
-xixi publish --path . --dept engineering
+xixi publish --path ./skills/pr-description
+xixi publish pr-description
 xixi publish --force
 ```
 
 Behavior:
-- validates `xixi.yaml`
-- enforces selected `dept === manifest.dept`
+- validates `SKILL.md` frontmatter and `agents/openai.yaml`
+- supports publishing installed skill by name from `~/.codex/skills/<name>`
 - clones remote skills repo
-- writes to `<dept>/<name>/`
+- writes to `skills/<name>/`
 - commits and pushes
 
 ### Install
 
 ```bash
-xixi install engineering/pr-description
-xixi install engineering/pr-description --ref main
+xixi install pr-description
+xixi install pr-description --ref main
 ```
 
 Behavior:
 - clones remote repo
 - checks target skill exists
-- copies into `~/.xixi/installed/<dept>/<name>`
+- copies into `~/.codex/skills/<name>` (default)
 - updates `~/.xixi/index.json`
 - prompts before overwrite if already installed
+
+### Uninstall
+
+```bash
+xixi uninstall pr-description
+xixi uninstall pr-description --force
+```
+
+Behavior:
+- removes local installed skill from `~/.codex/skills/<name>`
+- removes index record from `~/.xixi/index.json`
+- asks for confirmation unless `--force`
+
+### Remote
+
+```bash
+xixi remote
+xixi remote --name pr
+xixi remote --json
+```
+
+Behavior:
+- clones remote repo
+- scans `skills/` and lists available skill names
+- supports optional name filter and JSON output
 
 ### View
 
 ```bash
 xixi view
-xixi view --dept engineering
 xixi view --name pr
 xixi view --json
 ```
 
-Default output is grouped by department.
+Default output is a flat skill list.
 
 ## Error Handling
 
@@ -116,4 +140,3 @@ Verbose mode prints stack details and underlying failure context.
 ## Example Skill
 
 See `examples/sample-skill` for a minimal skill structure.
-

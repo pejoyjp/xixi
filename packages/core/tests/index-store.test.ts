@@ -24,8 +24,7 @@ afterEach(async () => {
 describe("index-store", () => {
   it("writes and reads records", async () => {
     useTempHome();
-    await upsertIndexRecord("engineering/pr-description", {
-      dept: "engineering",
+    await upsertIndexRecord("pr-description", {
       name: "pr-description",
       description: "desc",
       installedPath: "/tmp/installed",
@@ -36,7 +35,7 @@ describe("index-store", () => {
     });
 
     const index = await readIndex();
-    expect(index["engineering/pr-description"].source.ref).toBe("abc123");
+    expect(index["pr-description"].source.ref).toBe("abc123");
   });
 
   it("throws on broken json", async () => {
@@ -46,4 +45,3 @@ describe("index-store", () => {
     await expect(readIndex()).rejects.toThrow();
   });
 });
-

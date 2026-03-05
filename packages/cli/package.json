@@ -12,11 +12,11 @@
   ],
   "scripts": {
     "build": "tsup",
-    "prepare": "pnpm --filter @xixi/core build && pnpm build",
     "test": "pnpm --filter @xixi/core build && vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@xixi/core": "workspace:*",
     "chalk": "^5.4.1",
     "commander": "^13.1.0",
     "fs-extra": "^11.3.0",
@@ -25,7 +25,6 @@
     "simple-git": "^3.27.0"
   },
   "devDependencies": {
-    "@xixi/core": "workspace:*",
     "execa": "^9.5.2",
     "tsup": "^8.4.0"
   }

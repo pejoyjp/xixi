@@ -14,38 +14,19 @@ afterEach(async () => {
 });
 
 describe("publish command", () => {
-  it("fails on dept mismatch", async () => {
-    const skillRoot = await fs.mkdtemp(path.join(os.tmpdir(), "xixi-publish-"));
-    dirs.push(skillRoot);
-    await fs.outputFile(
-      path.join(skillRoot, "xixi.yaml"),
-      "schema_version: 1\nname: pr-description\ndept: engineering\ndescription: desc\nentry: prompt.md\n"
-    );
-    await fs.outputFile(path.join(skillRoot, "prompt.md"), "prompt");
-    await expect(
-      runPublish(
-        {
-          verbose: false,
-          config: {
-            skillsRepo: { url: "git@github.com:org/xixi-skills.git" },
-            depts: ["engineering", "ops"]
-          }
-        },
-        { path: skillRoot, dept: "ops" }
-      )
-    ).rejects.toThrow();
-  });
-
   it("publishes with force", async () => {
     const skillRoot = await fs.mkdtemp(path.join(os.tmpdir(), "xixi-publish-"));
     dirs.push(skillRoot);
     await fs.outputFile(
-      path.join(skillRoot, "xixi.yaml"),
-      "schema_version: 1\nname: pr-description\ndept: engineering\ndescription: desc\nentry: prompt.md\n"
+      path.join(skillRoot, "SKILL.md"),
+      "---\nname: pr-description\ndescription: desc\n---\n\n# PR Description\n"
     );
-    await fs.outputFile(path.join(skillRoot, "prompt.md"), "prompt");
+    await fs.outputFile(
+      path.join(skillRoot, "agents", "openai.yaml"),
+      "interface:\n  display_name: PR Description\n  short_description: desc\n  default_prompt: Do the task\n"
+    );
     const publishSpy = vi.spyOn(repoService, "publishToRepo").mockResolvedValue({
-      targetPath: "engineering/pr-description",
+      targetPath: "skills/pr-description",
       commitHash: "abc",
       branch: "main"
     });
@@ -57,9 +38,81 @@ describe("publish command", () => {
           depts: ["engineering"]
         }
       },
-      { path: skillRoot, dept: "engineering", force: true }
+      { path: skillRoot, force: true }
     );
     expect(publishSpy).toHaveBeenCalled();
   });
-});
 
+  it("publishes installed skill by name", async () => {
+    const installRoot = await fs.mkdtemp(path.join(os.tmpdir(), "xixi-installed-"));
+    const skillRoot = path.join(installRoot, "pr-description");
+    dirs.push(installRoot);
+    await fs.outputFile(
+      path.join(skillRoot, "SKILL.md"),
+      "---\nname: pr-description\ndescription: desc\n---\n\n# PR Description\n"
+    );
+    await fs.outputFile(
+      path.join(skillRoot, "agents", "openai.yaml"),
+      "interface:\n  display_name: PR Description\n  short_description: desc\n  default_prompt: Do the task\n"
+    );
+    const publishSpy = vi.spyOn(repoService, "publishToRepo").mockResolvedValue({
+      targetPath: "skills/pr-description",
+      commitHash: "abc",
+      branch: "main"
+    });
+
+    await runPublish(
+      {
+        verbose: false,
+        config: {
+          skillsRepo: { url: "git@github.com:org/xixi-skills.git" },
+          installRoot
+        }
+      },
+      { name: "pr-description", force: true }
+    );
+
+    expect(publishSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        skillRoot
+      })
+    );
+  });
+
+  it("auto-selects installed skill when cwd is not a skill root", async () => {
+    const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "xixi-cwd-"));
+    const installRoot = await fs.mkdtemp(path.join(os.tmpdir(), "xixi-installed-"));
+    dirs.push(cwd, installRoot);
+    vi.spyOn(process, "cwd").mockReturnValue(cwd);
+    await fs.outputFile(
+      path.join(installRoot, "beta-skill", "SKILL.md"),
+      "---\nname: beta-skill\ndescription: desc\n---\n\n# Beta\n"
+    );
+    await fs.outputFile(
+      path.join(installRoot, "beta-skill", "agents", "openai.yaml"),
+      "interface:\n  display_name: Beta\n  short_description: desc\n  default_prompt: Do the task\n"
+    );
+    const publishSpy = vi.spyOn(repoService, "publishToRepo").mockResolvedValue({
+      targetPath: "skills/beta-skill",
+      commitHash: "abc",
+      branch: "main"
+    });
+
+    await runPublish(
+      {
+        verbose: false,
+        config: {
+          skillsRepo: { url: "git@github.com:org/xixi-skills.git" },
+          installRoot
+        }
+      },
+      { force: true }
+    );
+
+    expect(publishSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        skillRoot: path.join(installRoot, "beta-skill")
+      })
+    );
+  });
+});

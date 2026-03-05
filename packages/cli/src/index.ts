@@ -3,7 +3,9 @@ import { toUserMessage } from "@xixi/core";
 import { runInit } from "./commands/init";
 import { runPublish } from "./commands/publish";
 import { runInstall } from "./commands/install";
+import { runUninstall } from "./commands/uninstall";
 import { runView } from "./commands/view";
+import { runRemote } from "./commands/remote";
 import { buildRuntime } from "./utils/runtime";
 import { printError } from "./ui/printer";
 
@@ -25,7 +27,7 @@ program
 
 program
   .command("init")
-  .description("Create a skill scaffold in current directory")
+  .description("Create a skill scaffold in ./skills/<name>")
   .action(async () => {
     const verbose = Boolean(program.opts<{ verbose?: boolean }>().verbose);
     await withErrorHandling(verbose, async () => {
@@ -37,43 +39,68 @@ program
 program
   .command("publish")
   .description("Publish current skill to shared repo")
-  .option("--path <dir>", "Skill root path", ".")
-  .option("--dept <dept>", "Target department")
+  .argument("[name]", "Installed skill name under ~/.codex/skills")
+  .option("--path <dir>", "Skill root path")
   .option("--force", "Overwrite existing remote skill")
-  .action(async (options: { path?: string; dept?: string; force?: boolean }) => {
+  .action(async (name: string | undefined, options: { path?: string; force?: boolean }) => {
     const verbose = Boolean(program.opts<{ verbose?: boolean }>().verbose);
     await withErrorHandling(verbose, async () => {
       const runtime = await buildRuntime(verbose);
-      await runPublish(runtime, options);
+      await runPublish(runtime, { ...options, name });
     });
   });
 
 program
   .command("install")
   .description("Install a skill from remote repo")
-  .argument("<dept/name>", "Skill identifier")
+  .argument("<name>", "Skill name")
   .option("--ref <gitRef>", "Git ref to install")
   .option("--global", "Reserved for future project-level installs", true)
-  .action(async (deptName: string, options: { ref?: string; global?: boolean }) => {
+  .action(async (name: string, options: { ref?: string; global?: boolean }) => {
     const verbose = Boolean(program.opts<{ verbose?: boolean }>().verbose);
     await withErrorHandling(verbose, async () => {
       const runtime = await buildRuntime(verbose);
-      await runInstall(runtime, deptName, options);
+      await runInstall(runtime, name, options);
+    });
+  });
+
+program
+  .command("uninstall")
+  .description("Uninstall a skill from local ~/.codex/skills")
+  .argument("<name>", "Skill name")
+  .option("--force", "Uninstall without confirmation")
+  .action(async (name: string, options: { force?: boolean }) => {
+    const verbose = Boolean(program.opts<{ verbose?: boolean }>().verbose);
+    await withErrorHandling(verbose, async () => {
+      const runtime = await buildRuntime(verbose);
+      await runUninstall(runtime, name, options);
     });
   });
 
 program
   .command("view")
   .description("View installed skills")
-  .option("--dept <dept>", "Filter by dept")
   .option("--name <substring>", "Filter by name substring")
   .option("--json", "Output JSON")
-  .action(async (options: { dept?: string; name?: string; json?: boolean }) => {
+  .action(async (options: { name?: string; json?: boolean }) => {
     const verbose = Boolean(program.opts<{ verbose?: boolean }>().verbose);
     await withErrorHandling(verbose, async () => {
       await runView(options);
     });
   });
 
-void program.parseAsync(process.argv);
+program
+  .command("remote")
+  .description("List skills from remote repo")
+  .option("--ref <gitRef>", "Git ref to query")
+  .option("--name <substring>", "Filter by skill name substring")
+  .option("--json", "Output JSON")
+  .action(async (options: { ref?: string; name?: string; json?: boolean }) => {
+    const verbose = Boolean(program.opts<{ verbose?: boolean }>().verbose);
+    await withErrorHandling(verbose, async () => {
+      const runtime = await buildRuntime(verbose);
+      await runRemote(runtime, options);
+    });
+  });
 
+void program.parseAsync(process.argv);

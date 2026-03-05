@@ -2,7 +2,6 @@ import { readIndex } from "@xixi/core";
 import { printInstalled } from "../ui/printer";
 
 export type ViewOptions = {
-  dept?: string;
   name?: string;
   json?: boolean;
 };
@@ -10,9 +9,6 @@ export type ViewOptions = {
 export async function runView(options: ViewOptions): Promise<void> {
   const index = await readIndex();
   const filteredEntries = Object.entries(index).filter(([key, value]) => {
-    if (options.dept && value.dept !== options.dept) {
-      return false;
-    }
     if (options.name && !key.includes(options.name) && !value.name.includes(options.name)) {
       return false;
     }
@@ -28,4 +24,3 @@ export async function runView(options: ViewOptions): Promise<void> {
 
   printInstalled(filtered);
 }
-

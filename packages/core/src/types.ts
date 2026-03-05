@@ -1,10 +1,6 @@
 export type XixiSkillManifestV1 = {
-  schema_version: 1;
   name: string;
-  dept: string;
   description: string;
-  entry: string;
-  version?: string;
 };
 
 export type XixiConfig = {
@@ -18,7 +14,6 @@ export type XixiConfig = {
 };
 
 export type InstalledSkillRecord = {
-  dept: string;
   name: string;
   description: string;
   installedPath: string;
@@ -29,4 +24,3 @@ export type InstalledSkillRecord = {
 };
 
 export type InstalledSkillIndex = Record<string, InstalledSkillRecord>;
-

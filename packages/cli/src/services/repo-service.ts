@@ -9,24 +9,8 @@ function tempDir(prefix: string, root?: string): Promise<string> {
   return fs.mkdtemp(path.join(root ?? os.tmpdir(), `${prefix}-`));
 }
 
-export async function listRemoteDepts(config: XixiConfig): Promise<string[]> {
-  const branch = config.skillsRepo.defaultBranch ?? (await detectDefaultBranch(config.skillsRepo.url));
-  const tmp = await tempDir("xixi-depts", config.tmpRoot);
-  try {
-    await cloneRepoShallow(config.skillsRepo.url, tmp, branch);
-    const entries = await fs.readdir(tmp, { withFileTypes: true });
-    return entries
-      .filter((item) => item.isDirectory() && !item.name.startsWith(".") && item.name !== ".git")
-      .map((item) => item.name)
-      .sort();
-  } finally {
-    await fs.remove(tmp);
-  }
-}
-
 export async function publishToRepo(input: {
   config: XixiConfig;
-  dept: string;
   name: string;
   skillRoot: string;
   force: boolean;
@@ -35,12 +19,12 @@ export async function publishToRepo(input: {
   const tmp = await tempDir("xixi-publish", input.config.tmpRoot);
   try {
     const git = await cloneRepoShallow(input.config.skillsRepo.url, tmp, branch);
-    const targetPath = path.join(tmp, input.dept, input.name);
+    const targetPath = path.join(tmp, "skills", input.name);
     const exists = await fs.pathExists(targetPath);
     if (exists && !input.force) {
       throw new XixiError(
         "SKILL_EXISTS",
-        `Skill already exists in remote repo: ${input.dept}/${input.name}`,
+        `Skill already exists in remote repo: skills/${input.name}`,
         "Use --force to overwrite."
       );
     }
@@ -51,9 +35,9 @@ export async function publishToRepo(input: {
 
     await fs.ensureDir(path.dirname(targetPath));
     await copyDir(input.skillRoot, targetPath);
-    const commitHash = await commitAndPush(git, `feat(${input.dept}): publish ${input.name}`, branch);
+    const commitHash = await commitAndPush(git, `feat(skills): publish ${input.name}`, branch);
     return {
-      targetPath: `${input.dept}/${input.name}`,
+      targetPath: `skills/${input.name}`,
       commitHash,
       branch
     };
@@ -62,9 +46,30 @@ export async function publishToRepo(input: {
   }
 }
 
+export async function listRemoteSkills(config: XixiConfig, ref?: string): Promise<string[]> {
+  const branch = ref ?? config.skillsRepo.defaultBranch ?? (await detectDefaultBranch(config.skillsRepo.url));
+  const tmp = await tempDir("xixi-remote", config.tmpRoot);
+  try {
+    const git = await cloneRepoShallow(config.skillsRepo.url, tmp, branch);
+    if (ref) {
+      await checkout(git, ref);
+    }
+    const skillsRoot = path.join(tmp, "skills");
+    if (!(await fs.pathExists(skillsRoot))) {
+      return [];
+    }
+    const entries = await fs.readdir(skillsRoot, { withFileTypes: true });
+    return entries
+      .filter((item) => item.isDirectory() && !item.name.startsWith("."))
+      .map((item) => item.name)
+      .sort();
+  } finally {
+    await fs.remove(tmp);
+  }
+}
+
 export async function installFromRepo(input: {
   config: XixiConfig;
-  dept: string;
   name: string;
   ref?: string;
 }): Promise<{ stagedSkillPath: string; commitHash: string; repoUrl: string; cleanup: () => Promise<void> }> {
@@ -74,10 +79,10 @@ export async function installFromRepo(input: {
   if (input.ref) {
     await checkout(git, input.ref);
   }
-  const stagedSkillPath = path.join(tmp, input.dept, input.name);
+  const stagedSkillPath = path.join(tmp, "skills", input.name);
   if (!(await fs.pathExists(stagedSkillPath))) {
     await fs.remove(tmp);
-    throw new XixiError("SKILL_NOT_FOUND", `Skill not found: ${input.dept}/${input.name}`);
+    throw new XixiError("SKILL_NOT_FOUND", `Skill not found: skills/${input.name}`);
   }
 
   const commitHash = await getCurrentCommit(git);
@@ -89,7 +94,6 @@ export async function installFromRepo(input: {
   };
 }
 
-export function getInstalledSkillPath(config: XixiConfig, dept: string, name: string): string {
-  return path.join(getResolvedInstallRoot(config), dept, name);
+export function getInstalledSkillPath(config: XixiConfig, name: string): string {
+  return path.join(getResolvedInstallRoot(config), name);
 }
-

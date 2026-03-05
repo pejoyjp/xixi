@@ -23,10 +23,13 @@ describe("install command", () => {
     process.env.HOME = home;
     process.env.USERPROFILE = home;
     await fs.outputFile(
-      path.join(stagedRoot, "xixi.yaml"),
-      "schema_version: 1\nname: pr-description\ndept: engineering\ndescription: desc\nentry: prompt.md\n"
+      path.join(stagedRoot, "SKILL.md"),
+      "---\nname: pr-description\ndescription: desc\n---\n\n# PR Description\n"
     );
-    await fs.outputFile(path.join(stagedRoot, "prompt.md"), "hello");
+    await fs.outputFile(
+      path.join(stagedRoot, "agents", "openai.yaml"),
+      "interface:\n  display_name: PR Description\n  short_description: desc\n  default_prompt: Do the task\n"
+    );
 
     vi.spyOn(repoService, "installFromRepo").mockResolvedValue({
       stagedSkillPath: stagedRoot,
@@ -44,14 +47,13 @@ describe("install command", () => {
           depts: ["engineering"]
         }
       },
-      "engineering/pr-description",
+      "pr-description",
       {}
     );
 
     const index = await fs.readJson(path.join(home, ".xixi", "index.json"));
-    expect(index["engineering/pr-description"]).toEqual(
+    expect(index["pr-description"]).toEqual(
       expect.objectContaining({
-        dept: "engineering",
         name: "pr-description"
       })
     );

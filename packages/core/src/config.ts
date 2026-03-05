@@ -3,7 +3,7 @@ import fs from "fs-extra";
 import { z } from "zod";
 import { CONFIG_FILENAME, DEFAULT_DEPTS, DEFAULT_SKILLS_REPO_URL } from "./constants";
 import { XixiError } from "./errors";
-import { getConfigPath, getInstallRoot, getTmpRoot, getXixiHomeDir } from "./paths";
+import { getConfigPath, getDefaultInstallRoot, getInstallRoot, getTmpRoot, getXixiHomeDir } from "./paths";
 import { XixiConfig } from "./types";
 
 const configSchema = z.object({
@@ -22,7 +22,7 @@ export function getDefaultConfig(): XixiConfig {
     skillsRepo: {
       url: DEFAULT_SKILLS_REPO_URL
     },
-    installRoot: path.join(xixiHome, "installed"),
+    installRoot: getDefaultInstallRoot(),
     tmpRoot: getTmpRoot({
       skillsRepo: { url: DEFAULT_SKILLS_REPO_URL }
     }),
@@ -44,6 +44,19 @@ export async function loadOrCreateConfig(): Promise<{ config: XixiConfig; path: 
   try {
     const loaded = await fs.readJson(configPath);
     const parsed = configSchema.parse(loaded);
+    const legacyInstallRoot = path.join(getXixiHomeDir(), "installed");
+    const normalizedInstallRoot =
+      !parsed.installRoot || parsed.installRoot === legacyInstallRoot
+        ? getDefaultInstallRoot()
+        : parsed.installRoot;
+    if (normalizedInstallRoot !== parsed.installRoot) {
+      const migrated: XixiConfig = {
+        ...parsed,
+        installRoot: normalizedInstallRoot
+      };
+      await fs.writeJson(configPath, migrated, { spaces: 2 });
+      return { config: migrated, path: configPath, created: false };
+    }
     return { config: parsed, path: configPath, created: false };
   } catch (error) {
     throw new XixiError(
@@ -66,4 +79,3 @@ export function resolveDeptList(config: XixiConfig): string[] {
 export function getResolvedInstallRoot(config: XixiConfig): string {
   return getInstallRoot(config);
 }
-

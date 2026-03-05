@@ -23,34 +23,36 @@ afterEach(async () => {
 describe("manifest validation", () => {
   it("accepts valid manifest", async () => {
     const dir = await makeTempSkill({
-      "xixi.yaml": "schema_version: 1\nname: pr-description\ndept: engineering\ndescription: desc\nentry: prompt.md\n",
-      "prompt.md": "# prompt"
+      "SKILL.md": "---\nname: pr-description\ndescription: desc\n---\n\n# Prompt\n",
+      "agents/openai.yaml":
+        "interface:\n  display_name: PR Description\n  short_description: desc\n  default_prompt: Do the task\n"
     });
-    const manifest = await loadAndValidateManifest(dir, ["engineering"]);
+    const manifest = await loadAndValidateManifest(dir);
     expect(manifest.name).toBe("pr-description");
   });
 
   it("rejects non-kebab name", async () => {
     const dir = await makeTempSkill({
-      "xixi.yaml": "schema_version: 1\nname: BadName\ndept: engineering\ndescription: desc\nentry: prompt.md\n",
-      "prompt.md": "# prompt"
+      "SKILL.md": "---\nname: BadName\ndescription: desc\n---\n\n# Prompt\n",
+      "agents/openai.yaml":
+        "interface:\n  display_name: PR Description\n  short_description: desc\n  default_prompt: Do the task\n"
     });
-    await expect(loadAndValidateManifest(dir, ["engineering"])).rejects.toThrow();
+    await expect(loadAndValidateManifest(dir)).rejects.toThrow();
   });
 
-  it("rejects unknown dept", async () => {
+  it("rejects missing openai metadata", async () => {
     const dir = await makeTempSkill({
-      "xixi.yaml": "schema_version: 1\nname: pr-description\ndept: finance\ndescription: desc\nentry: prompt.md\n",
-      "prompt.md": "# prompt"
+      "SKILL.md": "---\nname: pr-description\ndescription: desc\n---\n\n# Prompt\n"
     });
-    await expect(loadAndValidateManifest(dir, ["engineering"])).rejects.toThrow();
+    await expect(loadAndValidateManifest(dir)).rejects.toThrow();
   });
 
-  it("rejects missing entry", async () => {
+  it("rejects invalid frontmatter", async () => {
     const dir = await makeTempSkill({
-      "xixi.yaml": "schema_version: 1\nname: pr-description\ndept: engineering\ndescription: desc\nentry: prompt.md\n"
+      "SKILL.md": "# Missing frontmatter",
+      "agents/openai.yaml":
+        "interface:\n  display_name: PR Description\n  short_description: desc\n  default_prompt: Do the task\n"
     });
-    await expect(loadAndValidateManifest(dir, ["engineering"])).rejects.toThrow();
+    await expect(loadAndValidateManifest(dir)).rejects.toThrow();
   });
 });
-

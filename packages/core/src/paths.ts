@@ -15,11 +15,14 @@ export function getIndexPath(): string {
   return path.join(getXixiHomeDir(), INDEX_FILENAME);
 }
 
+export function getDefaultInstallRoot(): string {
+  return path.join(os.homedir(), ".codex", "skills");
+}
+
 export function getInstallRoot(config: XixiConfig): string {
-  return config.installRoot ?? path.join(getXixiHomeDir(), "installed");
+  return config.installRoot ?? getDefaultInstallRoot();
 }
 
 export function getTmpRoot(config: XixiConfig): string {
   return config.tmpRoot ?? os.tmpdir();
 }
-

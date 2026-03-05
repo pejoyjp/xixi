@@ -1,0 +1,4 @@
+interface:
+  display_name: "PR Description"
+  short_description: "Generate PR descriptions from diffs and commit context."
+  default_prompt: "Analyze the current branch diff and generate a concise PR title and description with risks and test notes."

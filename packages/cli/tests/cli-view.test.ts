@@ -16,8 +16,7 @@ describe("view command", () => {
     process.env.HOME = home;
     process.env.USERPROFILE = home;
     await fs.outputJson(path.join(home, ".xixi", "index.json"), {
-      "engineering/pr-description": {
-        dept: "engineering",
+      "pr-description": {
         name: "pr-description",
         description: "Generate PR description",
         installedPath: "/tmp/skill",
@@ -28,7 +27,7 @@ describe("view command", () => {
     const spy = vi.spyOn(console, "log").mockImplementation(() => {});
     await runView({ json: true });
     expect(spy).toHaveBeenCalled();
-    expect(String(spy.mock.calls[0][0])).toContain("engineering/pr-description");
+    expect(String(spy.mock.calls[0][0])).toContain("pr-description");
     await fs.remove(home);
   });
 });

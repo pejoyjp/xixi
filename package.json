@@ -7,11 +7,26 @@
   "bin": {
     "xixi": "packages/cli/dist/index.js"
   },
+  "files": [
+    "README.md",
+    "packages/cli/dist/**",
+    "packages/core/dist/**",
+    "packages/core/package.json"
+  ],
   "scripts": {
     "build": "pnpm -r build",
-    "postinstall": "pnpm build",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck"
+  },
+  "dependencies": {
+    "@xixi/core": "file:packages/core",
+    "chalk": "^5.4.1",
+    "commander": "^13.1.0",
+    "fs-extra": "^11.3.0",
+    "inquirer": "^12.4.2",
+    "js-yaml": "^4.1.0",
+    "simple-git": "^3.27.0",
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
